@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS gate_station (
     inlet_pressure_mpa  DECIMAL(6,3) NOT NULL,
     outlet_pressure_mpa DECIMAL(6,3) NOT NULL,
     daily_flow_m3       DECIMAL(12,2) NOT NULL DEFAULT 0,
+    inlet_capacity_m3   DECIMAL(12,2) NOT NULL DEFAULT 0,
     odorant_mg          DECIMAL(6,2) NOT NULL DEFAULT 0,
     status              VARCHAR(16) NOT NULL
 );
@@ -21,6 +22,7 @@ CREATE TABLE IF NOT EXISTS regulator_station (
     station_type        VARCHAR(24) NOT NULL,
     inlet_pressure_mpa  DECIMAL(6,3) NOT NULL,
     outlet_pressure_mpa DECIMAL(6,3) NOT NULL,
+    outlet_capacity_m3  DECIMAL(12,2) NOT NULL DEFAULT 0,
     status              VARCHAR(16) NOT NULL,
     last_inspect_at     DATETIME
 );
@@ -188,4 +190,59 @@ CREATE TABLE IF NOT EXISTS maintenance_idem (
     response_body VARCHAR(2048) NOT NULL,
     created_at    DATETIME NOT NULL,
     CONSTRAINT uk_maintenance_idem UNIQUE (tenant_id, request_id)
+);
+
+CREATE TABLE IF NOT EXISTS gas_supply_plan (
+    id                BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id         VARCHAR(16) NOT NULL,
+    plan_no           VARCHAR(40) NOT NULL,
+    plan_version      INT NOT NULL,
+    plan_date         DATE NOT NULL,
+    area_demand_m3    DECIMAL(12,2) NOT NULL DEFAULT 0,
+    demand_source     VARCHAR(24),
+    demand_reference  VARCHAR(256),
+    status            VARCHAR(16) NOT NULL,
+    change_note       VARCHAR(512),
+    source_version_id BIGINT,
+    created_by        VARCHAR(32),
+    updated_by        VARCHAR(32),
+    submitted_at      DATETIME,
+    submitted_by      VARCHAR(32),
+    reviewed_at       DATETIME,
+    reviewed_by       VARCHAR(32),
+    review_opinion    VARCHAR(512),
+    frozen_at         DATETIME,
+    frozen_by         VARCHAR(32),
+    lock_version      BIGINT NOT NULL DEFAULT 0,
+    created_at        DATETIME NOT NULL,
+    updated_at        DATETIME NOT NULL,
+    CONSTRAINT uk_gas_plan_version UNIQUE (tenant_id, plan_no, plan_version)
+);
+
+CREATE TABLE IF NOT EXISTS gas_plan_quota (
+    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id        VARCHAR(16) NOT NULL,
+    plan_version_id  BIGINT NOT NULL,
+    station_type     VARCHAR(24) NOT NULL,
+    station_id       BIGINT NOT NULL,
+    station_code     VARCHAR(24) NOT NULL,
+    station_name     VARCHAR(64) NOT NULL,
+    daily_flow_m3    DECIMAL(12,2),
+    capacity_m3      DECIMAL(12,2) NOT NULL,
+    quota_m3         DECIMAL(12,2) NOT NULL,
+    created_at       DATETIME NOT NULL,
+    updated_at       DATETIME NOT NULL,
+    CONSTRAINT uk_gas_plan_quota UNIQUE (tenant_id, plan_version_id, station_type, station_id)
+);
+
+CREATE TABLE IF NOT EXISTS gas_plan_history (
+    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id        VARCHAR(16) NOT NULL,
+    plan_version_id  BIGINT NOT NULL,
+    action           VARCHAR(24) NOT NULL,
+    from_status      VARCHAR(16),
+    to_status        VARCHAR(16),
+    operator_name    VARCHAR(32) NOT NULL,
+    note             VARCHAR(1024),
+    created_at       DATETIME NOT NULL
 );

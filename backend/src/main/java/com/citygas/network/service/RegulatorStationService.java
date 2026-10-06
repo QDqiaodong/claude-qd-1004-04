@@ -71,6 +71,8 @@ public class RegulatorStationService {
         r.setStationType(input.getStationType());
         r.setInPressureMpa(input.getInPressureMpa());
         r.setOutletPressureMpa(input.getOutletPressureMpa());
+        r.setOutletCapacityM3(input.getOutletCapacityM3() == null
+                ? new BigDecimal("80000.00") : input.getOutletCapacityM3());
         r.setStatus("待检");
         r.setLastInspectAt(LocalDateTime.now());
         return regulatorRepository.save(r);

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS gate_station (
     inlet_pressure_mpa  DECIMAL(6,3) NOT NULL,
     outlet_pressure_mpa DECIMAL(6,3) NOT NULL,
     daily_flow_m3       DECIMAL(12,2) NOT NULL DEFAULT 0,
+    inlet_capacity_m3   DECIMAL(12,2) NOT NULL DEFAULT 0,
     odorant_mg          DECIMAL(6,2) NOT NULL DEFAULT 0,
     status              VARCHAR(16) NOT NULL
 );
@@ -21,6 +22,7 @@ CREATE TABLE IF NOT EXISTS regulator_station (
     station_type        VARCHAR(24) NOT NULL,
     inlet_pressure_mpa  DECIMAL(6,3) NOT NULL,
     outlet_pressure_mpa DECIMAL(6,3) NOT NULL,
+    outlet_capacity_m3  DECIMAL(12,2) NOT NULL DEFAULT 0,
     status              VARCHAR(16) NOT NULL,
     last_inspect_at     DATETIME
 );
@@ -128,4 +130,119 @@ CREATE TABLE IF NOT EXISTS inspect_idem (
     response_body VARCHAR(2048) NOT NULL,
     created_at    DATETIME NOT NULL,
     CONSTRAINT uk_inspect_idem UNIQUE (tenant_id, request_id)
+);
+
+-- =====================================================================
+-- 管段检修影响评估与停复气联动（结构与生产 schema.sql 保持一致，H2 MySQL 模式）
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS maintenance_order (
+    id                   BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id            VARCHAR(16) NOT NULL,
+    order_no             VARCHAR(40) NOT NULL,
+    plan_start_at        DATETIME NOT NULL,
+    plan_end_at          DATETIME,
+    owner_name           VARCHAR(32) NOT NULL,
+    remark               VARCHAR(512) NOT NULL DEFAULT '',
+    status               VARCHAR(16) NOT NULL,
+    frozen               TINYINT NOT NULL DEFAULT 0,
+    published_at         DATETIME,
+    published_by         VARCHAR(32),
+    cut_off_at           DATETIME,
+    cut_off_by           VARCHAR(32),
+    started_at           DATETIME,
+    work_done_at         DATETIME,
+    restore_requested_at DATETIME,
+    restored_at          DATETIME,
+    restored_by          VARCHAR(32),
+    version              BIGINT NOT NULL DEFAULT 0,
+    created_at           DATETIME NOT NULL,
+    updated_at           DATETIME NOT NULL,
+    CONSTRAINT uk_maintenance_order_no UNIQUE (tenant_id, order_no)
+);
+
+CREATE TABLE IF NOT EXISTS maintenance_impact (
+    id                 BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id          VARCHAR(16) NOT NULL,
+    order_id           BIGINT NOT NULL,
+    target_type        VARCHAR(24) NOT NULL,
+    target_id          BIGINT,
+    target_code        VARCHAR(64) NOT NULL,
+    target_name        VARCHAR(128) NOT NULL,
+    source             VARCHAR(16) NOT NULL,
+    manual_note        VARCHAR(512),
+    acceptance_status  VARCHAR(16) NOT NULL DEFAULT '未验收',
+    accepted_at        DATETIME,
+    accepted_by        VARCHAR(32),
+    safety_status      VARCHAR(16) NOT NULL DEFAULT '未确认',
+    confirmed_at       DATETIME,
+    confirmed_by       VARCHAR(32),
+    created_at         DATETIME NOT NULL,
+    updated_at         DATETIME NOT NULL,
+    CONSTRAINT uk_maintenance_impact UNIQUE (tenant_id, order_id, target_type, target_id)
+);
+
+CREATE TABLE IF NOT EXISTS maintenance_idem (
+    id            BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id     VARCHAR(16) NOT NULL,
+    request_id    VARCHAR(64) NOT NULL,
+    action        VARCHAR(24) NOT NULL,
+    response_body VARCHAR(2048) NOT NULL,
+    created_at    DATETIME NOT NULL,
+    CONSTRAINT uk_maintenance_idem UNIQUE (tenant_id, request_id)
+);
+
+CREATE TABLE IF NOT EXISTS gas_supply_plan (
+    id                BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id         VARCHAR(16) NOT NULL,
+    plan_no           VARCHAR(40) NOT NULL,
+    plan_version      INT NOT NULL,
+    plan_date         DATE NOT NULL,
+    area_demand_m3    DECIMAL(12,2) NOT NULL DEFAULT 0,
+    demand_source     VARCHAR(24),
+    demand_reference  VARCHAR(256),
+    status            VARCHAR(16) NOT NULL,
+    change_note       VARCHAR(512),
+    source_version_id BIGINT,
+    created_by        VARCHAR(32),
+    updated_by        VARCHAR(32),
+    submitted_at      DATETIME,
+    submitted_by      VARCHAR(32),
+    reviewed_at       DATETIME,
+    reviewed_by       VARCHAR(32),
+    review_opinion    VARCHAR(512),
+    frozen_at         DATETIME,
+    frozen_by         VARCHAR(32),
+    lock_version      BIGINT NOT NULL DEFAULT 0,
+    created_at        DATETIME NOT NULL,
+    updated_at        DATETIME NOT NULL,
+    CONSTRAINT uk_gas_plan_version UNIQUE (tenant_id, plan_no, plan_version)
+);
+
+CREATE TABLE IF NOT EXISTS gas_plan_quota (
+    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id        VARCHAR(16) NOT NULL,
+    plan_version_id  BIGINT NOT NULL,
+    station_type     VARCHAR(24) NOT NULL,
+    station_id       BIGINT NOT NULL,
+    station_code     VARCHAR(24) NOT NULL,
+    station_name     VARCHAR(64) NOT NULL,
+    daily_flow_m3    DECIMAL(12,2),
+    capacity_m3      DECIMAL(12,2) NOT NULL,
+    quota_m3         DECIMAL(12,2) NOT NULL,
+    created_at       DATETIME NOT NULL,
+    updated_at       DATETIME NOT NULL,
+    CONSTRAINT uk_gas_plan_quota UNIQUE (tenant_id, plan_version_id, station_type, station_id)
+);
+
+CREATE TABLE IF NOT EXISTS gas_plan_history (
+    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id        VARCHAR(16) NOT NULL,
+    plan_version_id  BIGINT NOT NULL,
+    action           VARCHAR(24) NOT NULL,
+    from_status      VARCHAR(16),
+    to_status        VARCHAR(16),
+    operator_name    VARCHAR(32) NOT NULL,
+    note             VARCHAR(1024),
+    created_at       DATETIME NOT NULL
 );

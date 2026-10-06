@@ -50,6 +50,7 @@ public abstract class BaseIntegrationTest {
         TenantContext.set("A片区");
         jdbcTemplate.execute("SET REFERENTIAL_INTEGRITY FALSE");
         for (String table : List.of(
+                "gas_plan_history", "gas_plan_quota", "gas_supply_plan",
                 "maintenance_idem", "maintenance_impact", "maintenance_order",
                 "inspect_idem", "inspect_hazard_history", "inspect_hazard",
                 "inspect_batch_target", "inspect_batch",
@@ -87,6 +88,7 @@ public abstract class BaseIntegrationTest {
         r.setStationType("区域调压站");
         r.setInPressureMpa(new BigDecimal("0.380"));
         r.setOutletPressureMpa(new BigDecimal("0.120"));
+        r.setOutletCapacityM3(new BigDecimal("80000.00"));
         r.setStatus("运行");
         return regulatorRepository.saveAndFlush(r);
     }
@@ -99,6 +101,7 @@ public abstract class BaseIntegrationTest {
         g.setInletPressureMpa(new BigDecimal("1.200"));
         g.setOutletPressureMpa(new BigDecimal("0.380"));
         g.setDailyFlowM3(new BigDecimal("100000.00"));
+        g.setInletCapacityM3(new BigDecimal("120000.00"));
         g.setOdorantMg(new BigDecimal("22.00"));
         g.setStatus("运行");
         return gateStationRepository.saveAndFlush(g);

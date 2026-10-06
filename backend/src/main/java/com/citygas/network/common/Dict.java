@@ -108,6 +108,46 @@ public final class Dict {
     public static final List<String> MO_STATUSES = List.of(
             MO_DRAFT, MO_WAIT_CUTOFF, MO_WORKING, MO_WAIT_ACCEPT, MO_WAIT_RESTORE, MO_DONE);
 
+    // ---------------- 门站日输气计划与供气配额 ----------------
+    /** 计划版本状态：草稿 → 待复核 → 已提交 → 已冻结（复核驳回回到草稿） */
+    public static final String GP_DRAFT = "草稿";
+    public static final String GP_WAIT_REVIEW = "待复核";
+    public static final String GP_SUBMITTED = "已提交";
+    public static final String GP_FROZEN = "已冻结";
+
+    public static final List<String> GP_STATUSES =
+            List.of(GP_DRAFT, GP_WAIT_REVIEW, GP_SUBMITTED, GP_FROZEN);
+
+    /** 配额站类型 */
+    public static final String GP_GATE = "GATE_STATION";
+    public static final String GP_REGULATOR = "REGULATOR_STATION";
+
+    /** 片区需求来源：抄表快照 / 人工填报 */
+    public static final String DEMAND_METER_SNAPSHOT = "METER_SNAPSHOT";
+    public static final String DEMAND_MANUAL = "MANUAL";
+    public static final List<String> DEMAND_SOURCES = List.of(DEMAND_METER_SNAPSHOT, DEMAND_MANUAL);
+
+    /** 历史动作 */
+    public static final String GP_ACTION_CREATE = "创建";
+    public static final String GP_ACTION_UPDATE = "调整配额";
+    public static final String GP_ACTION_SUBMIT = "提交复核";
+    public static final String GP_ACTION_APPROVE = "复核通过";
+    public static final String GP_ACTION_REJECT = "复核驳回";
+    public static final String GP_ACTION_FREEZE = "冻结";
+    public static final String GP_ACTION_COPY = "复制新版本";
+
+    public static boolean isValidGasPlanStatus(String s) {
+        return s != null && GP_STATUSES.contains(s);
+    }
+
+    public static boolean isValidDemandSource(String s) {
+        return s != null && DEMAND_SOURCES.contains(s);
+    }
+
+    public static String demandSourceLabel(String s) {
+        return DEMAND_METER_SNAPSHOT.equals(s) ? "抄表快照" : DEMAND_MANUAL.equals(s) ? "人工填报" : s;
+    }
+
     /** 检修单允许的相邻状态跳转（发布与复气收口单独加锁处理，不在此列） */
     private static final Map<String, List<String>> MO_NEXT = Map.of(
             MO_DRAFT, List.of(MO_WAIT_CUTOFF),

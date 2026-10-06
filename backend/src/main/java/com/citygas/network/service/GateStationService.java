@@ -59,6 +59,8 @@ public class GateStationService {
         g.setInletPressureMpa(input.getInletPressureMpa());
         g.setOutletPressureMpa(input.getOutletPressureMpa());
         g.setDailyFlowM3(input.getDailyFlowM3() == null ? BigDecimal.ZERO : input.getDailyFlowM3());
+        g.setInletCapacityM3(input.getInletCapacityM3() == null
+                ? g.getDailyFlowM3() : input.getInletCapacityM3());
         g.setOdorantMg(input.getOdorantMg() == null ? BigDecimal.ZERO : input.getOdorantMg());
         g.setStatus("检修");
         return gateRepository.save(g);
@@ -84,6 +86,9 @@ public class GateStationService {
         }
         if (input.getDailyFlowM3() != null) {
             g.setDailyFlowM3(input.getDailyFlowM3());
+        }
+        if (input.getInletCapacityM3() != null) {
+            g.setInletCapacityM3(input.getInletCapacityM3());
         }
         if (input.getOdorantMg() != null) {
             g.setOdorantMg(input.getOdorantMg());

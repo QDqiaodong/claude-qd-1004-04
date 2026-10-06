@@ -51,9 +51,13 @@ public class GateStation {
     @Column(name = "outlet_pressure_mpa", nullable = false, precision = 6, scale = 3)
     private BigDecimal outletPressureMpa;
 
-    /** 日输气量（m³） */
+    /** 日输气量（m³）：近期实际输气快照 */
     @Column(name = "daily_flow_m3", nullable = false, precision = 12, scale = 2)
     private BigDecimal dailyFlowM3;
+
+    /** 进站能力上限（m³/日），日计划门站配额合计不得超过 */
+    @Column(name = "inlet_capacity_m3", nullable = false, precision = 12, scale = 2)
+    private BigDecimal inletCapacityM3;
 
     /** 加臭剂单耗（mg/m³） */
     @Column(name = "odorant_mg", nullable = false, precision = 6, scale = 2)

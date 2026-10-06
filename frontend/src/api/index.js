@@ -90,5 +90,18 @@ export default {
   acceptMaintenanceImpact: (id, impactId, d) =>
     call(http.post(`/maintenance-orders/${id}/impacts/${impactId}/accept`, d)),
   confirmMaintenanceSafety: (id, impactId, d) =>
-    call(http.post(`/maintenance-orders/${id}/impacts/${impactId}/safety`, d))
+    call(http.post(`/maintenance-orders/${id}/impacts/${impactId}/safety`, d)),
+
+  // ---------------- 门站日输气计划与供气配额 ----------------
+  listGasPlans: (p) => call(http.get('/gas-supply-plans', params(p))),
+  gasPlanContext: (p) => call(http.get('/gas-supply-plans/context', params(p))),
+  getGasPlan: (id) => call(http.get(`/gas-supply-plans/${id}`)),
+  getGasPlanHistory: (id) => call(http.get(`/gas-supply-plans/${id}/history`)),
+  compareGasPlans: (from, to) => call(http.get('/gas-supply-plans/compare', params({ from, to }))),
+  validateGasPlan: (id) => call(http.get(`/gas-supply-plans/${id}/validation`)),
+  createGasPlan: (d) => call(http.post('/gas-supply-plans', d)),
+  updateGasPlan: (id, d) => call(http.put(`/gas-supply-plans/${id}`, d)),
+  gasPlanAction: (id, action, d) =>
+    call(http.post(`/gas-supply-plans/${id}/${action}`, d)),
+  copyGasPlan: (id, d) => call(http.post(`/gas-supply-plans/${id}/copy`, d))
 }

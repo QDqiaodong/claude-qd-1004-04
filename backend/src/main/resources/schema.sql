@@ -17,6 +17,9 @@ CREATE DATABASE IF NOT EXISTS citygas_network
 USE citygas_network;
 
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS gas_plan_history;
+DROP TABLE IF EXISTS gas_plan_quota;
+DROP TABLE IF EXISTS gas_supply_plan;
 DROP TABLE IF EXISTS maintenance_idem;
 DROP TABLE IF EXISTS maintenance_impact;
 DROP TABLE IF EXISTS maintenance_order;
@@ -40,6 +43,7 @@ CREATE TABLE gate_station (
     inlet_pressure_mpa  DECIMAL(6,3) NOT NULL COMMENT '进站压力',
     outlet_pressure_mpa DECIMAL(6,3) NOT NULL COMMENT '出站压力',
     daily_flow_m3       DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '日输气量',
+    inlet_capacity_m3   DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '进站能力上限（m³/日）',
     odorant_mg          DECIMAL(6,2) NOT NULL DEFAULT 0 COMMENT '加臭剂单耗 mg/m3',
     status              VARCHAR(16) NOT NULL COMMENT '运行/检修/停用'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -53,6 +57,7 @@ CREATE TABLE regulator_station (
     station_type        VARCHAR(24) NOT NULL COMMENT '区域调压站/楼栋调压箱/专用调压站',
     inlet_pressure_mpa  DECIMAL(6,3) NOT NULL,
     outlet_pressure_mpa DECIMAL(6,3) NOT NULL COMMENT '不得超过 0.4MPa',
+    outlet_capacity_m3  DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '出口输配能力上限（m³/日）',
     status              VARCHAR(16) NOT NULL COMMENT '运行/待检/停用',
     last_inspect_at     DATETIME
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -92,16 +97,16 @@ CREATE TABLE gas_user (
 -- =====================================================================
 
 -- A片区（城东运营所）
-INSERT INTO gate_station (tenant_id, station_code, station_name, inlet_pressure_mpa, outlet_pressure_mpa, daily_flow_m3, odorant_mg, status) VALUES
-('A片区', 'GS-A01', '城东门站',   1.600, 0.380, 186000.00, 24.50, '运行'),
-('A片区', 'GS-A02', '滨海门站',   0.650, 0.360,  92000.00, 18.20, '运行'),
-('A片区', 'GS-A03', '老城门站',   1.200, 0.350,  64000.00, 22.00, '检修');
+INSERT INTO gate_station (tenant_id, station_code, station_name, inlet_pressure_mpa, outlet_pressure_mpa, daily_flow_m3, inlet_capacity_m3, odorant_mg, status) VALUES
+('A片区', 'GS-A01', '城东门站',   1.600, 0.380, 186000.00, 220000.00, 24.50, '运行'),
+('A片区', 'GS-A02', '滨海门站',   0.650, 0.360,  92000.00, 110000.00, 18.20, '运行'),
+('A片区', 'GS-A03', '老城门站',   1.200, 0.350,  64000.00,  80000.00, 22.00, '检修');
 
-INSERT INTO regulator_station (tenant_id, station_code, station_name, station_type, inlet_pressure_mpa, outlet_pressure_mpa, status, last_inspect_at) VALUES
-('A片区', 'RS-A01', '兴业路调压站', '区域调压站', 0.380, 0.120, '运行', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 60 DAY),
-('A片区', 'RS-A02', '花园小区调压箱', '楼栋调压箱', 0.120, 0.030, '运行', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 200 DAY),
-('A片区', 'RS-A03', '玻璃厂专用站', '专用调压站', 0.380, 0.450, '待检', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 30 DAY),
-('A片区', 'RS-A04', '临江调压站',   '区域调压站', 0.400, 0.150, '停用', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 400 DAY);
+INSERT INTO regulator_station (tenant_id, station_code, station_name, station_type, inlet_pressure_mpa, outlet_pressure_mpa, outlet_capacity_m3, status, last_inspect_at) VALUES
+('A片区', 'RS-A01', '兴业路调压站', '区域调压站', 0.380, 0.120, 120000.00, '运行', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 60 DAY),
+('A片区', 'RS-A02', '花园小区调压箱', '楼栋调压箱', 0.120, 0.030,  45000.00, '运行', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 200 DAY),
+('A片区', 'RS-A03', '玻璃厂专用站', '专用调压站', 0.380, 0.450,  80000.00, '待检', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 30 DAY),
+('A片区', 'RS-A04', '临江调压站',   '区域调压站', 0.400, 0.150,  60000.00, '停用', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 400 DAY);
 
 INSERT INTO pipe_segment (tenant_id, seg_code, start_point, end_point, material, pressure_level, length_m, buried_year, status, last_patrol_at) VALUES
 ('A片区', 'PS-A01', '城东门站',   '兴业路调压站', '钢管',  '次高压', 3200.00, 2008, '正常', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 3 DAY),
@@ -116,13 +121,13 @@ INSERT INTO gas_user (tenant_id, user_no, user_name, address, meter_no, last_rea
 ('A片区', 'U-A004', '陈静',   '临江路9号',      'M-A1004',  3200.00,  3260.00, '正常', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 200 DAY, '合格');
 
 -- B片区（城西运营所）
-INSERT INTO gate_station (tenant_id, station_code, station_name, inlet_pressure_mpa, outlet_pressure_mpa, daily_flow_m3, odorant_mg, status) VALUES
-('B片区', 'GS-B01', '城西门站', 1.450, 0.370, 142000.00, 23.80, '运行'),
-('B片区', 'GS-B02', '高新门站', 1.100, 0.390,  78000.00, 21.40, '运行');
+INSERT INTO gate_station (tenant_id, station_code, station_name, inlet_pressure_mpa, outlet_pressure_mpa, daily_flow_m3, inlet_capacity_m3, odorant_mg, status) VALUES
+('B片区', 'GS-B01', '城西门站', 1.450, 0.370, 142000.00, 180000.00, 23.80, '运行'),
+('B片区', 'GS-B02', '高新门站', 1.100, 0.390,  78000.00,  90000.00, 21.40, '运行');
 
-INSERT INTO regulator_station (tenant_id, station_code, station_name, station_type, inlet_pressure_mpa, outlet_pressure_mpa, status, last_inspect_at) VALUES
-('B片区', 'RS-B01', '科技园调压站', '区域调压站', 0.370, 0.110, '运行', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 20 DAY),
-('B片区', 'RS-B02', '学院路调压箱', '楼栋调压箱', 0.110, 0.028, '运行', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 15 DAY);
+INSERT INTO regulator_station (tenant_id, station_code, station_name, station_type, inlet_pressure_mpa, outlet_pressure_mpa, outlet_capacity_m3, status, last_inspect_at) VALUES
+('B片区', 'RS-B01', '科技园调压站', '区域调压站', 0.370, 0.110, 100000.00, '运行', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 20 DAY),
+('B片区', 'RS-B02', '学院路调压箱', '楼栋调压箱', 0.110, 0.028,  35000.00, '运行', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 15 DAY);
 
 INSERT INTO pipe_segment (tenant_id, seg_code, start_point, end_point, material, pressure_level, length_m, buried_year, status, last_patrol_at) VALUES
 ('B片区', 'PS-B01', '城西门站',   '科技园调压站', '钢管', '次高压', 2750.00, 2012, '正常', UTC_TIMESTAMP() + INTERVAL 8 HOUR - INTERVAL 2 DAY),
@@ -302,4 +307,68 @@ CREATE TABLE maintenance_idem (
     response_body VARCHAR(2048) NOT NULL COMMENT '首次成功响应 JSON 快照',
     created_at    DATETIME NOT NULL,
     UNIQUE KEY uk_maintenance_idem (tenant_id, request_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =====================================================================
+-- 门站日输气计划与供气配额编排
+-- 版本：草稿 → 待复核 → 已提交 → 已冻结（待复核驳回回到草稿）。
+-- 提交后的版本只读；如需调整只能复制为同计划编号下一版草稿。
+-- =====================================================================
+
+CREATE TABLE gas_supply_plan (
+    id                BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id         VARCHAR(16) NOT NULL COMMENT 'A片区/B片区（@TenantId）',
+    plan_no           VARCHAR(40) NOT NULL COMMENT '计划编号，同编号可演进多版本',
+    plan_version      INT NOT NULL COMMENT '业务版本号，从 1 开始',
+    plan_date         DATE NOT NULL COMMENT '供气日期',
+    area_demand_m3    DECIMAL(12,2) NOT NULL DEFAULT 0 COMMENT '片区需求量',
+    demand_source     VARCHAR(24) COMMENT 'METER_SNAPSHOT 抄表快照 / MANUAL 人工填报；草稿可暂缺',
+    demand_reference  VARCHAR(256) COMMENT '需求依据/填报说明',
+    status            VARCHAR(16) NOT NULL COMMENT '草稿/待复核/已提交/已冻结',
+    change_note       VARCHAR(512) COMMENT '变更说明',
+    source_version_id BIGINT COMMENT '复制来源版本 ID',
+    created_by        VARCHAR(32),
+    updated_by        VARCHAR(32),
+    submitted_at      DATETIME,
+    submitted_by      VARCHAR(32),
+    reviewed_at       DATETIME,
+    reviewed_by       VARCHAR(32),
+    review_opinion    VARCHAR(512) COMMENT '最近复核意见；历史意见在 gas_plan_history 留存',
+    frozen_at         DATETIME,
+    frozen_by         VARCHAR(32),
+    lock_version      BIGINT NOT NULL DEFAULT 0 COMMENT 'JPA 乐观锁版本',
+    created_at        DATETIME NOT NULL,
+    updated_at        DATETIME NOT NULL,
+    UNIQUE KEY uk_gas_plan_version (tenant_id, plan_no, plan_version),
+    KEY idx_gas_plan_date_status (tenant_id, plan_date, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE gas_plan_quota (
+    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id        VARCHAR(16) NOT NULL,
+    plan_version_id  BIGINT NOT NULL,
+    station_type     VARCHAR(24) NOT NULL COMMENT 'GATE_STATION / REGULATOR_STATION',
+    station_id       BIGINT NOT NULL,
+    station_code     VARCHAR(24) NOT NULL COMMENT '站点编号快照',
+    station_name     VARCHAR(64) NOT NULL COMMENT '站点名称快照',
+    daily_flow_m3    DECIMAL(12,2) COMMENT '编制时门站日输气量',
+    capacity_m3      DECIMAL(12,2) NOT NULL COMMENT '编制时进站/出口能力快照',
+    quota_m3         DECIMAL(12,2) NOT NULL COMMENT '本版本站点配额，草稿可暂存负值供提示',
+    created_at       DATETIME NOT NULL,
+    updated_at       DATETIME NOT NULL,
+    UNIQUE KEY uk_gas_plan_quota (tenant_id, plan_version_id, station_type, station_id),
+    KEY idx_gas_plan_quota_version (tenant_id, plan_version_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE gas_plan_history (
+    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id        VARCHAR(16) NOT NULL,
+    plan_version_id  BIGINT NOT NULL,
+    action           VARCHAR(24) NOT NULL COMMENT '创建/调整配额/提交复核/复核通过/复核驳回/冻结/复制新版本',
+    from_status      VARCHAR(16),
+    to_status        VARCHAR(16),
+    operator_name    VARCHAR(32) NOT NULL,
+    note             VARCHAR(1024) COMMENT '变更说明或复核意见',
+    created_at       DATETIME NOT NULL,
+    KEY idx_gas_plan_history_version (tenant_id, plan_version_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
