@@ -65,14 +65,29 @@ public class RegulatorStationService {
         if (input.getOutletPressureMpa().compareTo(input.getInPressureMpa()) > 0) {
             throw new BizException("出口压力不能高于进口压力");
         }
+        if (input.getOutletCapacityM3() != null && input.getOutletCapacityM3().signum() < 0) {
+            throw new BizException("出口供出能力不能为负");
+        }
         RegulatorStation r = new RegulatorStation();
         r.setStationCode(input.getStationCode().trim());
         r.setStationName(input.getStationName() == null ? input.getStationCode() : input.getStationName());
         r.setStationType(input.getStationType());
         r.setInPressureMpa(input.getInPressureMpa());
         r.setOutletPressureMpa(input.getOutletPressureMpa());
+        r.setOutletCapacityM3(input.getOutletCapacityM3());
         r.setStatus("待检");
         r.setLastInspectAt(LocalDateTime.now());
+        return regulatorRepository.save(r);
+    }
+
+    /** 核定出口供出能力（m³/日）：日供气配额不得超过该上限 */
+    @Transactional
+    public RegulatorStation setCapacity(Long id, BigDecimal capacityM3) {
+        RegulatorStation r = get(id);
+        if (capacityM3 == null || capacityM3.signum() < 0) {
+            throw new BizException("出口供出能力不能为空且不能为负");
+        }
+        r.setOutletCapacityM3(capacityM3);
         return regulatorRepository.save(r);
     }
 

@@ -47,6 +47,8 @@ export default {
   createRegulator: (d) => call(http.post('/regulator-stations', d)),
   setOutlet: (id, outletMpa) =>
     call(http.post(`/regulator-stations/${id}/outlet`, null, params({ outletMpa }))),
+  setRegulatorCapacity: (id, capacityM3) =>
+    call(http.post(`/regulator-stations/${id}/capacity`, null, params({ capacityM3 }))),
   inspectRegulator: (id) => call(http.post(`/regulator-stations/${id}/inspect`)),
   transferRegulator: (id, target) =>
     call(http.post(`/regulator-stations/${id}/transfer`, null, params({ target }))),
@@ -90,5 +92,16 @@ export default {
   acceptMaintenanceImpact: (id, impactId, d) =>
     call(http.post(`/maintenance-orders/${id}/impacts/${impactId}/accept`, d)),
   confirmMaintenanceSafety: (id, impactId, d) =>
-    call(http.post(`/maintenance-orders/${id}/impacts/${impactId}/safety`, d))
+    call(http.post(`/maintenance-orders/${id}/impacts/${impactId}/safety`, d)),
+
+  // ---------------- 门站日输气计划与供气配额编排 ----------------
+  listGasPlans: (p) => call(http.get('/gas-plans', params(p))),
+  getGasPlan: (id) => call(http.get(`/gas-plans/${id}`)),
+  gasPlanCapability: (planDate) => call(http.get('/gas-plans/capability', params({ planDate }))),
+  compareGasPlans: (fromId, toId) =>
+    call(http.get('/gas-plans/compare', params({ fromId, toId }))),
+  createGasPlan: (d) => call(http.post('/gas-plans', d)),
+  updateGasPlan: (id, d) => call(http.put(`/gas-plans/${id}`, d)),
+  gasPlanAction: (id, action, d) =>
+    call(http.post(`/gas-plans/${id}/${action}`, d))
 }

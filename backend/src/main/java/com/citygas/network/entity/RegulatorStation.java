@@ -55,6 +55,10 @@ public class RegulatorStation {
     @Column(name = "outlet_pressure_mpa", nullable = false, precision = 6, scale = 3)
     private BigDecimal outletPressureMpa;
 
+    /** 出口供出能力上限（m³/日），日供气配额不得超过该值；未核定为空 */
+    @Column(name = "outlet_capacity_m3", precision = 12, scale = 2)
+    private BigDecimal outletCapacityM3;
+
     /** 运行 / 待检 / 停用 */
     @Column(name = "status", nullable = false, length = 16)
     private String status;

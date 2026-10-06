@@ -19,7 +19,7 @@ const form = ref(blank())
 function blank() {
   return {
     stationCode: '', stationName: '', stationType: '区域调压站',
-    inPressureMpa: '', outletPressureMpa: '', status: '运行'
+    inPressureMpa: '', outletPressureMpa: '', outletCapacityM3: '', status: '运行'
   }
 }
 
@@ -28,6 +28,12 @@ const outletDialog = ref(false)
 const outletRow = ref(null)
 const outletValue = ref('')
 const outletBusy = ref(false)
+
+// 出口供出能力核定（m³/日）：供气配额不得超过该上限
+const capacityDialog = ref(false)
+const capacityRow = ref(null)
+const capacityValue = ref('')
+const capacityBusy = ref(false)
 
 async function load() {
   loading.value = true; error.value = ''
@@ -48,7 +54,8 @@ async function save() {
     const d = {
       ...form.value,
       inPressureMpa: Number(form.value.inPressureMpa),
-      outletPressureMpa: Number(form.value.outletPressureMpa)
+      outletPressureMpa: Number(form.value.outletPressureMpa),
+      outletCapacityM3: form.value.outletCapacityM3 === '' ? null : Number(form.value.outletCapacityM3)
     }
     await api.createRegulator(d)
     tip.value = `调压站 ${d.stationName} 已建档`
@@ -66,6 +73,22 @@ async function saveOutlet() {
     outletDialog.value = false
     await load()
   } catch (e) { error.value = e.message } finally { outletBusy.value = false }
+}
+
+function openCapacity(row) {
+  capacityRow.value = row
+  capacityValue.value = row.outletCapacityM3 ?? ''
+  capacityDialog.value = true
+  error.value = ''
+}
+async function saveCapacity() {
+  capacityBusy.value = true; error.value = ''
+  try {
+    await api.setRegulatorCapacity(capacityRow.value.id, Number(capacityValue.value))
+    tip.value = `${capacityRow.value.stationName} 出口供出能力已核定为 ${capacityValue.value} m³/日`
+    capacityDialog.value = false
+    await load()
+  } catch (e) { error.value = e.message } finally { capacityBusy.value = false }
 }
 
 async function inspect(row) {
@@ -125,15 +148,22 @@ onMounted(load)
         <el-table-column prop="stationType" label="类型" width="120" />
         <el-table-column prop="inPressureMpa" label="进口(MPa)" width="100" />
         <el-table-column prop="outletPressureMpa" label="出口(MPa)" width="100" />
+        <el-table-column label="出口能力(m³/日)" width="130">
+          <template #default="{ row }">
+            <el-tag v-if="row.outletCapacityM3 == null" size="small" type="warning">未核定</el-tag>
+            <span v-else>{{ row.outletCapacityM3 }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="90">
           <template #default="{ row }">
             <el-tag :type="row.status === '运行' ? 'success' : row.status === '待检' ? 'warning' : 'info'">{{ row.status }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="lastInspectAt" label="上次检验" width="160" />
-        <el-table-column label="操作" width="260" fixed="right">
+        <el-table-column label="操作" width="330" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="openOutlet(row)">调出口</el-button>
+            <el-button size="small" @click="openCapacity(row)">核定能力</el-button>
             <el-button size="small" @click="inspect(row)">登记检验</el-button>
             <el-button size="small" type="danger" plain :disabled="row.status === '停用'" @click="transfer(row, '停用')">停用</el-button>
           </template>
@@ -152,6 +182,9 @@ onMounted(load)
         </el-form-item>
         <el-form-item label="进口压力(MPa)"><el-input v-model="form.inPressureMpa" type="number" step="0.01" /></el-form-item>
         <el-form-item label="出口压力(MPa)"><el-input v-model="form.outletPressureMpa" type="number" step="0.01" /></el-form-item>
+        <el-form-item label="出口能力(m³/日)">
+          <el-input v-model="form.outletCapacityM3" type="number" step="100" placeholder="出口供出能力上限，未核定可留空" />
+        </el-form-item>
         <el-form-item label="状态" class="full">
           <el-radio-group v-model="form.status">
             <el-radio v-for="s in statuses" :key="s" :value="s">{{ s }}</el-radio>
@@ -174,6 +207,19 @@ onMounted(load)
       <template #footer>
         <el-button @click="outletDialog = false">取消</el-button>
         <el-button type="primary" :loading="outletBusy" @click="saveOutlet">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="capacityDialog" title="核定出口供出能力" width="420px">
+      <p style="margin:0 0 10px;color:var(--muted);font-size:13px">
+        {{ capacityRow && capacityRow.stationName }} —— 日供气配额不得超过该出口上限
+      </p>
+      <el-input v-model="capacityValue" type="number" step="100" placeholder="出口供出能力 m³/日">
+        <template #append>m³/日</template>
+      </el-input>
+      <template #footer>
+        <el-button @click="capacityDialog = false">取消</el-button>
+        <el-button type="primary" :loading="capacityBusy" @click="saveCapacity">确定</el-button>
       </template>
     </el-dialog>
   </div>

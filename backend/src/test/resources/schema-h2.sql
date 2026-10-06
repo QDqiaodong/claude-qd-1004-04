@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS regulator_station (
     station_type        VARCHAR(24) NOT NULL,
     inlet_pressure_mpa  DECIMAL(6,3) NOT NULL,
     outlet_pressure_mpa DECIMAL(6,3) NOT NULL,
+    outlet_capacity_m3  DECIMAL(12,2),
     status              VARCHAR(16) NOT NULL,
     last_inspect_at     DATETIME
 );
@@ -188,4 +189,61 @@ CREATE TABLE IF NOT EXISTS maintenance_idem (
     response_body VARCHAR(2048) NOT NULL,
     created_at    DATETIME NOT NULL,
     CONSTRAINT uk_maintenance_idem UNIQUE (tenant_id, request_id)
+);
+
+-- =====================================================================
+-- 门站日输气计划与供气配额编排（H2 MySQL 模式，结构与生产保持一致）
+-- =====================================================================
+
+CREATE TABLE IF NOT EXISTS gas_supply_plan (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id       VARCHAR(16) NOT NULL,
+    plan_no         VARCHAR(40) NOT NULL,
+    plan_date       DATE NOT NULL,
+    plan_version    INT NOT NULL,
+    copied_from_id  BIGINT,
+    owner_name      VARCHAR(32) NOT NULL,
+    daily_demand_m3 DECIMAL(14,2) NOT NULL,
+    demand_source   VARCHAR(256),
+    change_note     VARCHAR(512),
+    status          VARCHAR(16) NOT NULL,
+    submitted_at    DATETIME,
+    submitted_by    VARCHAR(32),
+    reviewed_at     DATETIME,
+    reviewed_by     VARCHAR(32),
+    frozen_at       DATETIME,
+    frozen_by       VARCHAR(32),
+    version         BIGINT NOT NULL DEFAULT 0,
+    created_at      DATETIME NOT NULL,
+    updated_at      DATETIME NOT NULL,
+    CONSTRAINT uk_gas_plan_no UNIQUE (tenant_id, plan_no),
+    CONSTRAINT uk_gas_plan_date_version UNIQUE (tenant_id, plan_date, plan_version)
+);
+
+CREATE TABLE IF NOT EXISTS gas_supply_quota (
+    id            BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id     VARCHAR(16) NOT NULL,
+    plan_id       BIGINT NOT NULL,
+    station_type  VARCHAR(16) NOT NULL,
+    station_id    BIGINT NOT NULL,
+    station_code  VARCHAR(24) NOT NULL,
+    station_name  VARCHAR(64) NOT NULL,
+    capacity_m3   DECIMAL(12,2) NOT NULL,
+    quota_m3      DECIMAL(12,2) NOT NULL,
+    remark        VARCHAR(256),
+    created_at    DATETIME NOT NULL,
+    updated_at    DATETIME NOT NULL,
+    CONSTRAINT uk_gas_quota_station UNIQUE (tenant_id, plan_id, station_type, station_id)
+);
+
+CREATE TABLE IF NOT EXISTS gas_supply_plan_history (
+    id             BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id      VARCHAR(16) NOT NULL,
+    plan_id        BIGINT NOT NULL,
+    action         VARCHAR(16) NOT NULL,
+    from_status    VARCHAR(16),
+    to_status      VARCHAR(16),
+    operator_name  VARCHAR(32) NOT NULL,
+    review_opinion VARCHAR(512),
+    created_at     DATETIME NOT NULL
 );

@@ -8,6 +8,7 @@ import PipeSegmentView from '../views/PipeSegmentView.vue'
 import GasUserView from '../views/GasUserView.vue'
 import InspectionView from '../views/InspectionView.vue'
 import MaintenanceView from '../views/MaintenanceView.vue'
+import GasPlanView from '../views/GasPlanView.vue'
 
 const routes = [
   { path: '/', redirect: '/gate' },
@@ -17,6 +18,7 @@ const routes = [
   { path: '/user', name: 'user', component: GasUserView },
   { path: '/inspection', name: 'inspection', component: InspectionView },
   { path: '/maintenance', name: 'maintenance', component: MaintenanceView },
+  { path: '/gas-plan', name: 'gasPlan', component: GasPlanView },
   { path: '/:pathMatch(.*)*', redirect: '/gate' }
 ]
 

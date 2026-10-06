@@ -9,6 +9,7 @@ import PipeSegmentView from './views/PipeSegmentView.vue'
 import GasUserView from './views/GasUserView.vue'
 import InspectionView from './views/InspectionView.vue'
 import MaintenanceView from './views/MaintenanceView.vue'
+import GasPlanView from './views/GasPlanView.vue'
 
 // ------------------------------------------------------------------
 // 导航形态：右侧竖排标签。左侧是业务内容，最右侧一条竖排标签栏切换模块，
@@ -21,7 +22,8 @@ const viewMap = {
   '/pipe': PipeSegmentView,
   '/user': GasUserView,
   '/inspection': InspectionView,
-  '/maintenance': MaintenanceView
+  '/maintenance': MaintenanceView,
+  '/gas-plan': GasPlanView
 }
 
 const tabs = [
@@ -30,13 +32,14 @@ const tabs = [
   { path: '/pipe', label: '管网管段', sub: '材质 · 压力级制 · 巡检' },
   { path: '/user', label: '燃气用户', sub: '抄表 · 入户安检' },
   { path: '/inspection', label: '巡检批次', sub: '批次 · 隐患闭环' },
-  { path: '/maintenance', label: '管段检修', sub: '影响评估 · 停复气' }
+  { path: '/maintenance', label: '管段检修', sub: '影响评估 · 停复气' },
+  { path: '/gas-plan', label: '供气计划', sub: '配额编排 · 版本冻结' }
 ]
 
 const tenants = ['A片区', 'B片区']
 const currentTenant = ref('A片区')
 const currentPath = ref(router.currentRoute.value.path)
-const counts = ref({ gate: 0, regulator: 0, pipe: 0, user: 0, inspection: 0, maintenance: 0 })
+const counts = ref({ gate: 0, regulator: 0, pipe: 0, user: 0, inspection: 0, maintenance: 0, 'gas-plan': 0 })
 
 const currentView = computed(() => viewMap[currentPath.value] || GateStationView)
 
@@ -49,14 +52,15 @@ function setTenant(t) {
 
 async function loadCounts() {
   try {
-    const [g, r, p, u, b, m] = await Promise.all([
+    const [g, r, p, u, b, m, gp] = await Promise.all([
       api.listGateStations(), api.listRegulators(), api.listSegments(), api.listUsers(),
       api.listBatches({ page: 0, size: 1 }),
-      api.listMaintenanceOrders({ page: 0, size: 1 })
+      api.listMaintenanceOrders({ page: 0, size: 1 }),
+      api.listGasPlans({ page: 0, size: 1 })
     ])
     counts.value = {
       gate: g.length, regulator: r.length, pipe: p.length, user: u.length,
-      inspection: b.total || 0, maintenance: m.total || 0
+      inspection: b.total || 0, maintenance: m.total || 0, 'gas-plan': gp.total || 0
     }
   } catch (e) {
     // 计数失败不影响主流程

@@ -48,6 +48,13 @@ public class RegulatorStationController {
         return ApiResponse.success("出口压力已调整", regulatorService.setOutlet(id, outletMpa));
     }
 
+    /** 核定出口供出能力（m³/日），供气配额不得超过该上限 */
+    @PostMapping("/{id}/capacity")
+    public ApiResponse<RegulatorStation> setCapacity(@PathVariable Long id,
+                                                     @RequestParam BigDecimal capacityM3) {
+        return ApiResponse.success("出口供出能力已核定", regulatorService.setCapacity(id, capacityM3));
+    }
+
     @PostMapping("/{id}/inspect")
     public ApiResponse<RegulatorStation> inspect(@PathVariable Long id) {
         return ApiResponse.success("检验已登记", regulatorService.inspect(id));

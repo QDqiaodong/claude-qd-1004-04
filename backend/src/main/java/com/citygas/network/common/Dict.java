@@ -167,6 +167,45 @@ public final class Dict {
     /** 风险等级 */
     public static final List<String> RISK_LEVELS = List.of("高", "中", "低");
 
+    // ---------------- 门站日输气计划与供气配额编排 ----------------
+    /** 计划版本状态机：草稿 → 待复核 → 已提交 → 已冻结（待复核可退回草稿） */
+    public static final String GP_DRAFT = "草稿";
+    public static final String GP_REVIEWING = "待复核";
+    public static final String GP_SUBMITTED = "已提交";
+    public static final String GP_FROZEN = "已冻结";
+
+    public static final List<String> GP_STATUSES =
+            List.of(GP_DRAFT, GP_REVIEWING, GP_SUBMITTED, GP_FROZEN);
+
+    /**
+     * 计划允许的状态跳转。提交复核 / 复核收口 / 冻结均在行锁内复查状态，
+     * 并发推进时后来者收到 409，不允许改写先到者的配额、复核意见与状态。
+     */
+    private static final Map<String, List<String>> GP_NEXT = Map.of(
+            GP_DRAFT, List.of(GP_REVIEWING),
+            GP_REVIEWING, List.of(GP_SUBMITTED, GP_DRAFT),
+            GP_SUBMITTED, List.of(GP_FROZEN),
+            GP_FROZEN, List.of());
+
+    /** 配额站点类型：门站（进站能力约束）/ 调压站（出口上限约束） */
+    public static final String GP_STATION_GATE = "GATE";
+    public static final String GP_STATION_REGULATOR = "REGULATOR";
+
+    /** 复核 / 流转历史动作 */
+    public static final String GP_ACTION_SUBMIT_REVIEW = "提交复核";
+    public static final String GP_ACTION_REVIEW_PASS = "复核通过";
+    public static final String GP_ACTION_REVIEW_REJECT = "复核退回";
+    public static final String GP_ACTION_FREEZE = "冻结";
+    public static final String GP_ACTION_COPY = "复制新版本";
+
+    public static boolean isValidGasPlanStatus(String s) {
+        return s != null && GP_STATUSES.contains(s);
+    }
+
+    public static boolean canTransferGasPlan(String from, String to) {
+        return GP_NEXT.getOrDefault(from, List.of()).contains(to);
+    }
+
     public static boolean isValidRiskLevel(String r) {
         return r != null && RISK_LEVELS.contains(r);
     }
